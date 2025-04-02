@@ -32,6 +32,9 @@ monitor AKS with Prometheus and Grafana :
 
 Install Prometheus and Grafana using helm:
 
+pre-requisties:
+helm install in your machine
+
 PS C:\Users\priya\devops-cicd-imp\Practice_Devops> helm repo add stable https://charts.helm.sh/stable
 "stable" has been added to your repositories
 PS C:\Users\priya\devops-cicd-imp\Practice_Devops> helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
