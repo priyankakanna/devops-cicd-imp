@@ -2,13 +2,12 @@ pipeline {
     agent any
     environment {
         GITHUB_URL = 'https://github.com/priyankakanna/devops-cicd-imp/tree/main/Practice_Devops/terraform'
-        WORKSPACE_DIR = 'C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\terraform-pipeline' // Adjust if necessary
+        WORKSPACE_DIR = 'C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\terraform-pipeline'
     }
     stages {
         stage('Clone GitHub Repository') {
             steps {
                 script {
-                    // Clone the specific GitHub repo
                     git url: 'https://github.com/priyankakanna/devops-cicd-imp.git', branch: 'main'
                 }
             }
@@ -17,9 +16,7 @@ pipeline {
         stage('Change Directory') {
             steps {
                 script {
-                    // Change to the directory where Terraform files exist
                     dir('Practice_Devops/terraform') {
-                        // Run Terraform initialization
                         bat 'terraform init'
                     }
                 }
@@ -29,7 +26,6 @@ pipeline {
         stage('Terraform Plan') {
             steps {
                 script {
-                    // Run terraform plan to see what changes will be made
                     dir('Practice_Devops/terraform') {
                         bat 'terraform plan'
                     }
@@ -39,30 +35,52 @@ pipeline {
 
         stage('Terraform Apply') {
             steps {
-                dir('Practice_Devops/terraform') {
-                    script {
-                        try {
-                            // Run Terraform apply with -auto-approve to avoid manual approval
-                            bat 'terraform apply -auto-approve'
-                        } catch (Exception e) {
-                            // If terraform apply fails, notify the failure
-                            echo 'Terraform apply failed. Please check the logs.'
-                            throw e // rethrow the exception to mark the stage as failed
-                        }
+                script {
+                    dir('Practice_Devops/terraform') {
+                        bat 'terraform apply -auto-approve'
+                    }
+                }
+            }
+        }
+
+        stage('Login to Azure') {
+            steps {
+                script {
+                    // Ensure the correct Azure environment variables are used
+                    bat """
+                    az login --service-principal -u ${env.ARM_CLIENT_ID} -p ${env.ARM_CLIENT_SECRET} --tenant ${env.ARM_TENANT_ID}
+                    """
+                }
+            }
+        }
+
+        stage('Deploy to AKS') {
+            steps {
+                script {
+                    // Get credentials for the AKS cluster
+                    bat "az aks get-credentials --resource-group aks_tf_rgpriya --name my-aks-cluster123 --admin"
+                    
+                    // Debugging: List files to ensure deployment.yaml is in the directory
+                    bat "dir"
+                    
+                    // Change to the correct directory and apply the Kubernetes deployment
+                    dir('Practice_Devops/terraform') {
+                        bat "kubectl apply -f deployment.yaml"
                     }
                 }
             }
         }
     }
+
     post {
         always {
             echo 'Pipeline execution completed.'
         }
         success {
-            echo 'Terraform plan and apply executed successfully!'
+            echo 'Terraform plan executed and deployment completed successfully!'
         }
         failure {
-            echo 'Terraform plan or apply failed. Please check the logs.'
+            echo 'Pipeline failed. Please check the logs.'
         }
     }
 }
