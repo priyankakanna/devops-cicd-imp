@@ -83,7 +83,7 @@ pipeline {
             }
             steps {
                 script {
-                    bat "az aks get-credentials --resource-group aks_tf_rgpriya --name my-aks-cluster123 --admin"
+                    bat "az aks get-credentials --resource-group aks_tf_rgpriya --name my-aks-cluster123 --admin --overwrite-existing"
                     bat "dir"
                     dir('Practice_Devops/terraform') {
                         bat "kubectl apply -f deployment.yaml"
