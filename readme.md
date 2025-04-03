@@ -24,6 +24,19 @@ To create AKS using Terraform
 Move the generated Kubeconfig file to ~/.kube/config
 mv kubeconfig ~/.kube/config
 
+-----------------------------------
+
+
+![image](https://github.com/user-attachments/assets/f8243a1a-3fcc-4c75-83c8-838a6105a5df)
+
+-------------------------------
+
+![image](https://github.com/user-attachments/assets/e3238ea1-f649-454f-89f0-9ad1d79eb870)
+
+---------------
+
+
+
 kubectl get nodes
 
 create simple deployment like nginx deployment with 2 or 3 replicas.
