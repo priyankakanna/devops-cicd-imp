@@ -3,6 +3,7 @@ pipeline {
     environment {
         GITHUB_URL = 'https://github.com/priyankakanna/devops-cicd-imp/tree/main/Practice_Devops/terraform'
         WORKSPACE_DIR = 'C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\terraform-pipeline'
+        DESTROY_INFRA = false // Set this to true when you want to destroy
     }
     stages {
         stage('Clone GitHub Repository') {
@@ -13,7 +14,7 @@ pipeline {
             }
         }
         
-        stage('Change Directory') {
+        stage('Initialize Terraform') {
             steps {
                 script {
                     dir('Practice_Devops/terraform') {
@@ -23,10 +24,14 @@ pipeline {
             }
         }
         
-        stage('Terraform Plan') {
+        stage('Terraform Plan/Validate') {
+            when {
+                expression { env.DESTROY_INFRA == 'false' }
+            }
             steps {
                 script {
                     dir('Practice_Devops/terraform') {
+                        bat 'terraform validate'
                         bat 'terraform plan'
                     }
                 }
@@ -34,6 +39,9 @@ pipeline {
         }
 
         stage('Terraform Apply') {
+            when {
+                expression { env.DESTROY_INFRA == 'false' }
+            }
             steps {
                 script {
                     dir('Practice_Devops/terraform') {
@@ -43,10 +51,25 @@ pipeline {
             }
         }
 
-        stage('Login to Azure') {
+        stage('Terraform Destroy') {
+            when {
+                expression { env.DESTROY_INFRA == 'true' }
+            }
             steps {
                 script {
-                    // Ensure the correct Azure environment variables are used
+                    dir('Practice_Devops/terraform') {
+                        bat 'terraform destroy -auto-approve'
+                    }
+                }
+            }
+        }
+
+        stage('Azure Login') {
+            when {
+                expression { env.DESTROY_INFRA == 'false' }
+            }
+            steps {
+                script {
                     bat """
                     az login --service-principal -u ${env.ARM_CLIENT_ID} -p ${env.ARM_CLIENT_SECRET} --tenant ${env.ARM_TENANT_ID}
                     """
@@ -54,18 +77,33 @@ pipeline {
             }
         }
 
-        stage('Deploy to AKS') {
+        stage('AKS Deployment') {
+            when {
+                expression { env.DESTROY_INFRA == 'false' }
+            }
             steps {
                 script {
-                    // Get credentials for the AKS cluster
                     bat "az aks get-credentials --resource-group aks_tf_rgpriya --name my-aks-cluster123 --admin"
-                    
-                    // Debugging: List files to ensure deployment.yaml is in the directory
                     bat "dir"
-                    
-                    // Change to the correct directory and apply the Kubernetes deployment
                     dir('Practice_Devops/terraform') {
                         bat "kubectl apply -f deployment.yaml"
+                    }
+                }
+            }
+        }
+
+        stage('AKS Cleanup') {
+            when {
+                expression { env.DESTROY_INFRA == 'true' }
+            }
+            steps {
+                script {
+                    bat """
+                    az login --service-principal -u ${env.ARM_CLIENT_ID} -p ${env.ARM_CLIENT_SECRET} --tenant ${env.ARM_TENANT_ID}
+                    """
+                    bat "az aks get-credentials --resource-group aks_tf_rgpriya --name my-aks-cluster123 --admin"
+                    dir('Practice_Devops/terraform') {
+                        bat "kubectl delete -f deployment.yaml --ignore-not-found"
                     }
                 }
             }
@@ -77,7 +115,13 @@ pipeline {
             echo 'Pipeline execution completed.'
         }
         success {
-            echo 'Terraform plan executed and deployment completed successfully!'
+            script {
+                if (env.DESTROY_INFRA == 'true') {
+                    echo 'Infrastructure destroyed successfully!'
+                } else {
+                    echo 'Infrastructure deployed successfully!'
+                }
+            }
         }
         failure {
             echo 'Pipeline failed. Please check the logs.'
