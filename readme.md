@@ -35,7 +35,16 @@ mv kubeconfig ~/.kube/config
 
 ---------------
 
+![image](https://github.com/user-attachments/assets/854d7ea9-59fc-49f6-aa95-452abc01aa1f)
 
+-----
+
+![image](https://github.com/user-attachments/assets/fc8f5bbf-cb0f-41d4-a814-12fc2c72532c)
+
+----
+![image](https://github.com/user-attachments/assets/9fc0b51f-c8d2-489a-ac94-fe45a2cb3d55)
+
+----------
 
 kubectl get nodes
 
