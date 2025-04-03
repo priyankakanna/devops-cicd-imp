@@ -21,6 +21,12 @@ To create AKS using Terraform
 3. terraform Plan
 4. terraform apply or terraform apply -auto-approve
 
+az account list --output table
+az ad sp create-for-rbac --name terraform-sp --role Contributor --scopes /subscriptions/your-subscription-id
+
+5. az role assignment create --assignee <your appid > --role "Owner" --scope /subscriptions/<your subscription id>
+
+
 Move the generated Kubeconfig file to ~/.kube/config
 mv kubeconfig ~/.kube/config
 
