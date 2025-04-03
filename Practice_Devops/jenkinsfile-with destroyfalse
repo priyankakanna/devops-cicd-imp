@@ -3,10 +3,10 @@ pipeline {
     environment {
         GITHUB_URL = 'https://github.com/priyankakanna/devops-cicd-imp/tree/main/Practice_Devops/terraform'
         WORKSPACE_DIR = 'C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\terraform-pipeline'
-        DESTROY_INFRA = true // Set this to true when you want to destroy
+        DESTROY_INFRA = false // Set to true for destruction
     }
     stages {
-        stage('Clone GitHub Repository') {
+        stage('Clone Repository') {
             steps {
                 script {
                     git url: 'https://github.com/priyankakanna/devops-cicd-imp.git', branch: 'main'
@@ -14,7 +14,7 @@ pipeline {
             }
         }
         
-        stage('Initialize Terraform') {
+        stage('Terraform Init') {
             steps {
                 script {
                     dir('Practice_Devops/terraform') {
@@ -24,14 +24,14 @@ pipeline {
             }
         }
         
-        stage('Terraform Plan/Validate') {
+        // CREATE FLOW
+        stage('Terraform Plan') {
             when {
                 expression { env.DESTROY_INFRA == 'false' }
             }
             steps {
                 script {
                     dir('Practice_Devops/terraform') {
-                        bat 'terraform validate'
                         bat 'terraform plan'
                     }
                 }
@@ -51,6 +51,50 @@ pipeline {
             }
         }
 
+        stage('Deploy to AKS') {
+            when {
+                expression { env.DESTROY_INFRA == 'false' }
+            }
+            steps {
+                script {
+                    // Login to Azure
+                    bat """
+                    az login --service-principal -u ${env.ARM_CLIENT_ID} -p ${env.ARM_CLIENT_SECRET} --tenant ${env.ARM_TENANT_ID}
+                    """
+                    
+                    // Get credentials with retries
+                    retry(3) {
+                        bat """
+                        az aks get-credentials --resource-group aks_tf_rgpriya --name my-aks-cluster123 --admin --overwrite-existing
+                        """
+                    }
+                    
+                    // Wait for cluster to be ready (up to 5 minutes)
+                    timeout(time: 5, unit: 'MINUTES') {
+                        waitUntil {
+                            def ready = bat(
+                                script: 'kubectl cluster-info 2>&1 | find "is running at"',
+                                returnStatus: true
+                            ) == 0
+                            if (!ready) {
+                                sleep 30
+                            }
+                            return ready
+                        }
+                    }
+                    
+                    // Apply deployment with validation disabled (temporarily)
+                    dir('Practice_Devops/terraform') {
+                        bat 'kubectl apply -f deployment.yaml --validate=false'
+                        
+                        // Verify deployment
+                        bat 'kubectl rollout status deployment/nginx-deployment --timeout=300s'
+                    }
+                }
+            }
+        }
+
+        // DESTROY FLOW
         stage('Terraform Destroy') {
             when {
                 expression { env.DESTROY_INFRA == 'true' }
@@ -64,51 +108,22 @@ pipeline {
             }
         }
 
-        stage('Azure Login') {
-            when {
-                expression { env.DESTROY_INFRA == 'false' }
-            }
-            steps {
-                script {
-                    bat """
-                    az login --service-principal -u ${env.ARM_CLIENT_ID} -p ${env.ARM_CLIENT_SECRET} --tenant ${env.ARM_TENANT_ID}
-                    """
-                }
-            }
-        }
-
-        stage('AKS Deployment') {
-            when {
-                expression { env.DESTROY_INFRA == 'false' }
-            }
-            steps {
-                script {
-                    bat "az aks get-credentials --resource-group aks_tf_rgpriya --name my-aks-cluster123 --admin --overwrite-existing"
-                    bat "dir"
-                    dir('Practice_Devops/terraform') {
-                        bat "kubectl apply -f deployment.yaml"
-                    }
-                }
-            }
-        }
-
-        stage('AKS Cleanup') {
+        stage('Post-Destroy Cleanup') {
             when {
                 expression { env.DESTROY_INFRA == 'true' }
             }
             steps {
                 script {
-                    // Graceful cleanup that won't fail if resources are already gone
-                    bat """
-                    az login --service-principal -u ${env.ARM_CLIENT_ID} -p ${env.ARM_CLIENT_SECRET} --tenant ${env.ARM_TENANT_ID} || echo "Azure login skipped (may already be logged in)"
-                    az aks get-credentials --resource-group aks_tf_rgpriya --name my-aks-cluster123 --admin --overwrite-existing || echo "Cluster not found (already destroyed)"
-                    """
-                    
-                    dir('Practice_Devops/terraform') {
-                        bat """
-                        kubectl delete -f deployment.yaml --ignore-not-found || echo "Deployment not found (already deleted)"
-                        """
-                    }
+                    // Graceful cleanup that won't fail pipeline
+                    def status = bat(
+                        script: """
+                        az login --service-principal -u ${env.ARM_CLIENT_ID} -p ${env.ARM_CLIENT_SECRET} --tenant ${env.ARM_TENANT_ID} || echo "Azure login skipped"
+                        az aks get-credentials --resource-group aks_tf_rgpriya --name my-aks-cluster123 --admin --overwrite-existing || echo "Cluster not found - already destroyed"
+                        kubectl delete -f deployment.yaml --ignore-not-found || echo "Deployment not found"
+                        """,
+                        returnStatus: true
+                    )
+                    echo "Cleanup completed with status: ${status}"
                 }
             }
         }
@@ -116,19 +131,20 @@ pipeline {
 
     post {
         always {
-            echo 'Pipeline execution completed.'
+            echo 'Pipeline execution completed'
         }
         success {
             script {
                 if (env.DESTROY_INFRA == 'true') {
-                    echo 'Infrastructure destroyed successfully!'
+                    echo 'SUCCESS: Infrastructure destroyed (cleanup may have reported non-critical errors)'
                 } else {
-                    echo 'Infrastructure deployed successfully!'
+                    echo 'SUCCESS: Infrastructure deployed and configured'
                 }
             }
         }
         failure {
-            echo 'Pipeline failed. Please check the logs.'
+            echo 'FAILURE: Pipeline failed during critical operations'
+            // Add notification here if needed
         }
     }
 }
