@@ -3,32 +3,36 @@ Deploy AKS Cluster using Terraform & Monitor the Deployment with Prometheus and 
 Implemented on **Windows 11** machine.
 
 **Prerequisties:**
+
 1. Install Java and Jenkins on your machine: https://www.jenkins.io/doc/book/installing/windows/
-2. Install Terraform, Git, Github Plugins on Jenkins.
-3. Configure the Github Token Credentials as Secret in Jenkins.
+   
+3. Install Terraform, Git, Github Plugins on Jenkins.
+   
+5. Configure the Github Token Credentials as Secret in Jenkins.
+   
 **Step 1: Generate GitHub Personal Access Token (PAT)**:
-Go to https://github.com/settings/tokens
-Click "Generate new token" (or "Fine-grained token" for more control)
-Set:
-Token name: jenkins-token (or anything you like)
-Expiration: e.g., 90 days
-Scopes: at least select:
-repo (mostly private repos or your wish)
-workflow (if using GitHub Actions)
-Click Generate token
-Copy the token – you won’t see it again.
+- Go to https://github.com/settings/tokens
+- Click "Generate new token" (or "Fine-grained token" for more control)
+- Set:
+- Token name: jenkins-token (or anything you like)
+- Expiration: e.g., 90 days
+- Scopes: at least select:
+- repo (mostly private repos or your wish)
+- workflow (if using GitHub Actions)
+- Click Generate token
+- Copy the token – you won’t see it again.
 
 **Step 2: Add GitHub Token as a Secret in Jenkins**
-Login to your Jenkins UI.
-Go to Manage Jenkins → Credentials
-Choose the appropriate domain (or "Global" if unsure)
-Click (+) Add Credentials
-Choose:
-Kind: Secret text
-Secret: Paste your GitHub token here
-ID: Give a name like github-token (you’ll use this in your pipeline)
-Description: (Optional) e.g., GitHub token for accessing private repos
-Click OK
+1\. Login to your Jenkins UI  
+2\. Go to Manage Jenkins → Credentials  
+3\. Choose the appropriate domain (or "Global" if unsure)  
+4\. Click (+) Add Credentials  
+5\. Choose:  
+   - Kind: Secret text  
+   - Secret: Paste your GitHub token here  
+   - ID: github-token  
+   - Description: (Optional) GitHub token for accessing private repos  
+6\. Click OK
 
 5. Azure Portal login and Active Subscription and Azure CLI.
 
