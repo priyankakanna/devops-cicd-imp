@@ -86,7 +86,7 @@ Create AKS cluster using Terraform with Jenkins Pipeline script
 
 ![image](https://github.com/user-attachments/assets/d8cfe80b-731f-40ad-84a6-acd9226b6253)
 
-- On Console output we can find the Urls for the Prometheus and Grafana to access: 
+- On Console output we can find the Ip addresses for the Prometheus and Grafana to access: 
 
 ![image](https://github.com/user-attachments/assets/78d7329d-f52e-4c9c-8de9-26de170454eb)
 
