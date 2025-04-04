@@ -23,16 +23,16 @@ Implemented on **Windows 11** machine.
 - Copy the token – you won’t see it again.
 
 **Step 2: Add GitHub Token as a Secret in Jenkins**
-1\. Login to your Jenkins UI  
-2\. Go to Manage Jenkins → Credentials  
-3\. Choose the appropriate domain (or "Global" if unsure)  
-4\. Click (+) Add Credentials  
-5\. Choose:  
+- Login to your Jenkins UI  
+- Go to Manage Jenkins → Credentials  
+- Choose the appropriate domain (or "Global" if unsure)  
+- Click (+) Add Credentials  
+- Choose:  
    - Kind: Secret text  
    - Secret: Paste your GitHub token here  
    - ID: github-token  
    - Description: (Optional) GitHub token for accessing private repos  
-6\. Click OK
+- Click OK
 
 5. Azure Portal login and Active Subscription and Azure CLI.
 
