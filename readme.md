@@ -63,6 +63,9 @@ Let's create following tf files using Visual studio Code:
 Create AKS cluster using Terraform with Jenkins Pipeline script
 ---------------------------------------------------------------------
 
+You can find the Jenkins File in this path:
+
+https://github.com/priyankakanna/devops-cicd-imp/tree/main/Practice_Devops/jenkins
 
 
 Create Dashboard in Grafana
