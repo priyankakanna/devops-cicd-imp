@@ -58,6 +58,8 @@ Will get the details as below:
 
 Let's create following tf files using Visual studio Code:
 
+Can find the terraform files here:   https://github.com/priyankakanna/devops-cicd-imp/tree/main/Practice_Devops/terraform
+
 1. Variables.tf - where we will define the variables used in main.tf
 2. terraform.tfvars - Declare the values for the variables
 3. providers.tf - declare the providers with version
@@ -82,15 +84,11 @@ How to Create Kubernetes Monitoring Dashboard?
 For creating a dashboard to monitor the cluster:
 --------------------------------------------------------
 
-Click '+' button on left panel and select ‘Import’.
-
-Enter 12740 dashboard id under Grafana.com Dashboard.
-
-Click ‘Load’.
-
-Select ‘Prometheus’ as the endpoint under prometheus data sources drop down.
-
-Click ‘Import’.
+- Click '+' button on left panel and select ‘Import’.
+- Enter 12740 dashboard id under Grafana.com Dashboard.
+- Click ‘Load’.
+- Select ‘Prometheus’ as the endpoint under prometheus data sources drop down.
+- Click ‘Import’.
 
 This will show monitoring dashboard for all cluster nodes
 
@@ -102,15 +100,11 @@ How to Create Kubernetes Cluster Monitoring Dashboard?
 
 For creating a dashboard to monitor the cluster:
 
-Click '+' button on left panel and select ‘Import’.
-
-Enter 3119 dashboard id under Grafana.com Dashboard.
-
-Click ‘Load’.
-
-Select ‘Prometheus’ as the endpoint under prometheus data sources drop down.
-
-Click ‘Import’.
+- Click '+' button on left panel and select ‘Import’.
+- Enter 3119 dashboard id under Grafana.com Dashboard.
+- Click ‘Load’.
+- Select ‘Prometheus’ as the endpoint under prometheus data sources drop down.
+- Click ‘Import’.
 
 This will show monitoring dashboard for all cluster nodes
 
@@ -120,20 +114,13 @@ Create POD Monitoring Dashboard
 -----------------------------------------------
 For creating a dashboard to monitor the cluster:
 
-Click '+' button on left panel and select ‘Import’.
+- Click '+' button on left panel and select ‘Import’.
+- Enter 6417 dashboard id under Grafana.com Dashboard.
+- Click ‘Load’.
+- Select ‘Prometheus’ as the endpoint under prometheus data sources drop down.
+- Click ‘Import’.
 
-Enter 6417 dashboard id under Grafana.com Dashboard.
-
-Click ‘Load’.
-
-Select ‘Prometheus’ as the endpoint under prometheus data sources drop down.
-
-Click ‘Import’.
-
+Next clean up the AKS cluster: 
 --------------
 
-![image](https://github.com/user-attachments/assets/5e6c1fce-a741-4628-a565-b0e0016654b8)
-
-
-
-Next clean up the AKS cluster using terraform destroy -auto-approve.
+Update the **DESTROY_INFRA = true** // Set to true for destruction in the Jenkinsfile.
