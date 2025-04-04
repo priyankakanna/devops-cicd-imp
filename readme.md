@@ -34,16 +34,16 @@ Implemented on **Windows 11** machine.
    - Description: (Optional) GitHub token for accessing private repos  
 - Click OK
 
-5. Azure Portal login and Active Subscription and Azure CLI.
+4. Azure Portal login and Active Subscription and Azure CLI.
 
 In Azure CLI cloud do these steps for access to Terraform 
-az account list --output table
+- az account list --output table
 👉 Lists all your Azure subscriptions in a nice table format so you can pick the right one.
 
-az ad sp create-for-rbac --name terraform-sp --role Contributor --scopes /subscriptions/your-subscription-id
+- az ad sp create-for-rbac --name terraform-sp --role Contributor --scopes /subscriptions/your-subscription-id
 👉 Creates a service principal (like a bot user) with Contributor access to your subscription, so Terraform can safely manage Azure resources.
 
-az role assignment create --assignee <your appid> --role "Owner" --scope /subscriptions/<your-subscription-id>
+- az role assignment create --assignee <your appid> --role "Owner" --scope /subscriptions/<your-subscription-id>
 👉 Gives Owner access to that service principal, allowing it to do everything (including assigning roles) inside your subscription.
 
 Will get the details as below:
