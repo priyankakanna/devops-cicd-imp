@@ -1,11 +1,31 @@
-Create AKS cluster using Terraform:
-
+Deploy AKS Cluster using Terraform & Monitor the Deployment with Prometheus and Grafana (Helm charts) using Jenkins Pipeline:
+------------------------------------------------------------
+I had done this in Windows 11 machine.
 Prerequisties:
+1. Install Java and Jenkins on your machine.
+2. Install Terraform, Git, Github Plugins on Jenkins.
+3. Configure the Github Token Credentials as Secret in Jenkins.
+4. Azure Portal login and Active Subscription and Azure CLI.
 
-1. Install Terraform on your machine.
-2. Azure Portal login and Active Subscription.
-3. Install Kubectl on your machine.
-4. Azure CLI is installed.
+In Azure CLI cloud do these steps for access to Terraform 
+az account list --output table
+👉 Lists all your Azure subscriptions in a nice table format so you can pick the right one.
+
+az ad sp create-for-rbac --name terraform-sp --role Contributor --scopes /subscriptions/your-subscription-id
+👉 Creates a service principal (like a bot user) with Contributor access to your subscription, so Terraform can safely manage Azure resources.
+
+az role assignment create --assignee <your appid> --role "Owner" --scope /subscriptions/<your-subscription-id>
+👉 Gives Owner access to that service principal, allowing it to do everything (including assigning roles) inside your subscription.
+
+Will get the details as below:
+{
+  "appId": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+  "displayName": "terraform-sp",
+  "password": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+  "tenant": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+}                                                    
+
+5. Configure the Azure Credentials as Env Variables in Jenkins retrieved from above as ARM_CLIENT_ID, ARM_CLIENT_SECRET & ARM_TENANT_ID .
 
 Let's create following tf files using Visual studio Code:
 
@@ -15,107 +35,11 @@ Let's create following tf files using Visual studio Code:
 4. main.tf - main configuration file with all the resources which will be created
 5. output.tf - Export some data to output file
 
-To create AKS using Terraform
-1. terraform init
-2. terraform Validate
-3. terraform Plan
-4. terraform apply or terraform apply -auto-approve
-
-az account list --output table
-az ad sp create-for-rbac --name terraform-sp --role Contributor --scopes /subscriptions/your-subscription-id
-
-5. az role assignment create --assignee <your appid > --role "Owner" --scope /subscriptions/<your subscription id>
+Create AKS cluster using Terraform with Jenkins Pipeline script
+---------------------------------------------------------------------
 
 
-Move the generated Kubeconfig file to ~/.kube/config
-mv kubeconfig ~/.kube/config
 
------------------------------------
-
-
-![image](https://github.com/user-attachments/assets/f8243a1a-3fcc-4c75-83c8-838a6105a5df)
-
--------------------------------
-
-![image](https://github.com/user-attachments/assets/e3238ea1-f649-454f-89f0-9ad1d79eb870)
-
----------------
-
-![image](https://github.com/user-attachments/assets/854d7ea9-59fc-49f6-aa95-452abc01aa1f)
-
------
-
-![image](https://github.com/user-attachments/assets/fc8f5bbf-cb0f-41d4-a814-12fc2c72532c)
-
-----
-![image](https://github.com/user-attachments/assets/9fc0b51f-c8d2-489a-ac94-fe45a2cb3d55)
-
-----------
-
-kubectl get nodes
-
-create simple deployment like nginx deployment with 2 or 3 replicas.
-
-monitor AKS with Prometheus and Grafana :
-
-Install Prometheus and Grafana using helm:
-
-pre-requisties:
-helm install in your machine
-
-PS C:\Users\priya\devops-cicd-imp\Practice_Devops> helm repo add stable https://charts.helm.sh/stable
-"stable" has been added to your repositories
-PS C:\Users\priya\devops-cicd-imp\Practice_Devops> helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-"prometheus-community" has been added to your repositories
-PS C:\Users\priya\devops-cicd-imp\Practice_Devops> helm search repo prometheus-community
-
-PS C:\Users\priya\devops-cicd-imp\Practice_Devops> kubectl create namespace prometheus
-Error from server (AlreadyExists): namespaces "prometheus" already exists
-PS C:\Users\priya\devops-cicd-imp\Practice_Devops> kubectl get namespaces
-NAME              STATUS   AGE
-default           Active   33m
-kube-node-lease   Active   33m
-kube-public       Active   33m
-kube-system       Active   33m
-prometheus        Active   25m
-PS C:\Users\priya\devops-cicd-imp\Practice_Devops> helm install stable prometheus-community/kube-prometheus-stack -n prometheus
-NAME: stable
-LAST DEPLOYED: Wed Apr  2 12:41:57 2025
-NAMESPACE: prometheus
-STATUS: deployed
-REVISION: 1
-NOTES:
-kube-prometheus-stack has been installed. Check its status by running:
-  kubectl --namespace prometheus get pods -l "release=stable"
-
-Get Grafana 'admin' user password by running:
-
-  kubectl --namespace prometheus get secrets stable-grafana -o jsonpath="{.data.admin-password}" | base64 -d ; echo
-
-Access Grafana local instance:
-
-  export POD_NAME=$(kubectl --namespace prometheus get pod -l "app.kubernetes.io/name=grafana,app.kubernetes.io/instance=stable" -oname)
-  kubectl --namespace prometheus port-forward $POD_NAME 3000
-
-Visit https://github.com/prometheus-operator/kube-prometheus for instructions on how to create & configure Alertmanager and Prometheus instances using the Operator.
-PS C:\Users\priya\devops-cicd-imp\Practice_Devops> 
-PS C:\Users\priya\devops-cicd-imp\Practice_Devops> kubectl get pods -n prometheus
-
-PS C:\Users\priya\devops-cicd-imp\Practice_Devops> kubectl get svc -n prometheus
-
-PS C:\Users\priya\devops-cicd-imp\Practice_Devops> kubectl edit svc stable-kube-prometheus-sta-prometheus -n prometheus  ---** edit as LoadBalancer instead of clusterIP**
-service/stable-kube-prometheus-sta-prometheus edited
-PS C:\Users\priya\devops-cicd-imp\Practice_Devops> kubectl edit svc stable-grafana -n prometheus   ---** edit as LoadBalancer instead of clusterIP**
-service/stable-grafana edited
-PS C:\Users\priya\devops-cicd-imp\Practice_Devops> kubectl get svc -n prometheus
-
-PS C:\Users\priya\devops-cicd-imp\Practice_Devops>
-
-Now can access the Grafana using the above loadbalancer url http://132.196.211.25 
-
-
-UserName: admin 
-Password: prom-operator
 
 Create Dashboard in Grafana
 -----------------------------------
