@@ -1,0 +1,255 @@
+pipeline {
+    agent any
+    environment {
+        GITHUB_URL = 'https://github.com/priyankakanna/devops-cicd-imp/tree/main/Practice_Devops/terraform'
+        WORKSPACE_DIR = 'C:\\ProgramData\\Jenkins\\.jenkins\\workspace\\terraform-pipeline'
+        DESTROY_INFRA = false // Set to true for destruction
+        HELM_VERSION = 'v3.12.0'
+        PROMETHEUS_NAMESPACE = 'monitoring'
+        GRAFANA_NAMESPACE = 'monitoring'
+        HELM_INSTALL_DIR = 'C:\\helm'
+    }
+    stages {
+        stage('Clone Repository') {
+            steps {
+                script {
+                    git url: 'https://github.com/priyankakanna/devops-cicd-imp.git', branch: 'main'
+                }
+            }
+        }
+        
+        stage('Terraform Init') {
+            steps {
+                script {
+                    dir('Practice_Devops/terraform') {
+                        bat 'terraform init'
+                    }
+                }
+            }
+        }
+        
+        // CREATE FLOW
+        stage('Terraform Plan') {
+            when {
+                expression { env.DESTROY_INFRA == 'false' }
+            }
+            steps {
+                script {
+                    dir('Practice_Devops/terraform') {
+                        bat 'terraform plan'
+                    }
+                }
+            }
+        }
+
+        stage('Terraform Apply') {
+            when {
+                expression { env.DESTROY_INFRA == 'false' }
+            }
+            steps {
+                script {
+                    dir('Practice_Devops/terraform') {
+                        bat 'terraform apply -auto-approve'
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to AKS') {
+            when {
+                expression { env.DESTROY_INFRA == 'false' }
+            }
+            steps {
+                script {
+                    // Login to Azure
+                    bat """
+                    az login --service-principal -u ${env.ARM_CLIENT_ID} -p ${env.ARM_CLIENT_SECRET} --tenant ${env.ARM_TENANT_ID}
+                    """
+                    
+                    // Get credentials with retries
+                    retry(3) {
+                        bat """
+                        az aks get-credentials --resource-group aks_tf_rgpriya --name my-aks-cluster123 --admin --overwrite-existing
+                        """
+                    }
+                    
+                    // Wait for cluster to be ready
+                    timeout(time: 5, unit: 'MINUTES') {
+                        waitUntil {
+                            def ready = bat(
+                                script: 'kubectl cluster-info 2>&1 | find "is running at"',
+                                returnStatus: true
+                            ) == 0
+                            if (!ready) {
+                                sleep 30
+                            }
+                            return ready
+                        }
+                    }
+                    
+                    // Apply deployment
+                    dir('Practice_Devops/terraform') {
+                        bat 'kubectl apply -f deployment.yaml --validate=false'
+                        bat 'kubectl rollout status deployment/nginx-deployment --timeout=300s'
+                    }
+                }
+            }
+        }
+
+        stage('Install Helm') {
+            when {
+                expression { env.DESTROY_INFRA == 'false' }
+            }
+            steps {
+                script {
+                    // Create Helm directory if it doesn't exist
+                    bat """
+                    if not exist "${env.HELM_INSTALL_DIR}" mkdir "${env.HELM_INSTALL_DIR}"
+                    """
+                    
+                    // Download Helm using PowerShell (more reliable on Windows)
+                    bat """
+                    powershell -Command "Invoke-WebRequest -Uri 'https://get.helm.sh/helm-${env.HELM_VERSION}-windows-amd64.zip' -OutFile '${env.HELM_INSTALL_DIR}\\helm.zip'"
+                    """
+                    
+                    // Extract using PowerShell Expand-Archive
+                    bat """
+                    powershell -Command "Expand-Archive -Path '${env.HELM_INSTALL_DIR}\\helm.zip' -DestinationPath '${env.HELM_INSTALL_DIR}' -Force"
+                    """
+                    
+                    // Add to PATH for current session
+                    withEnv(["PATH+HELM=${env.HELM_INSTALL_DIR}\\windows-amd64"]) {
+                        bat 'helm version'
+                    }
+                }
+            }
+        }
+
+        stage('Deploy Monitoring Stack') {
+            when {
+                expression { env.DESTROY_INFRA == 'false' }
+            }
+            steps {
+                script {
+                    // Ensure Helm is in PATH
+                    withEnv(["PATH+HELM=${env.HELM_INSTALL_DIR}\\windows-amd64"]) {
+                        // Create monitoring namespace
+                        bat "kubectl create namespace ${env.PROMETHEUS_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -"
+                        
+                        // Add Prometheus Helm repo and install
+                        bat """
+                        helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+                        helm repo update
+                        helm install prometheus prometheus-community/kube-prometheus-stack \
+                            --namespace ${env.PROMETHEUS_NAMESPACE} \
+                            --set prometheus.service.type=LoadBalancer \
+                            --set grafana.service.type=LoadBalancer \
+                            --set grafana.adminPassword=admin \
+                            --set prometheus.prometheusSpec.serviceMonitorSelectorNilUsesHelmValues=false \
+                            --set prometheus.prometheusSpec.podMonitorSelectorNilUsesHelmValues=false
+                        """
+                        
+                        // Wait for services to be ready
+                        timeout(time: 10, unit: 'MINUTES') {
+                            waitUntil {
+                                def promReady = bat(
+                                    script: "kubectl get svc -n ${env.PROMETHEUS_NAMESPACE} prometheus-kube-prometheus-prometheus -o jsonpath='{.status.loadBalancer.ingress[0].ip}'",
+                                    returnStatus: true
+                                ) == 0
+                                def grafanaReady = bat(
+                                    script: "kubectl get svc -n ${env.PROMETHEUS_NAMESPACE} prometheus-grafana -o jsonpath='{.status.loadBalancer.ingress[0].ip}'",
+                                    returnStatus: true
+                                ) == 0
+                                return promReady && grafanaReady
+                            }
+                        }
+                        
+                        // Get external IPs
+                        def prometheusIp = bat(
+                            script: "kubectl get svc -n ${env.PROMETHEUS_NAMESPACE} prometheus-kube-prometheus-prometheus -o jsonpath='{.status.loadBalancer.ingress[0].ip}'",
+                            returnStdout: true
+                        ).trim()
+                        
+                        def grafanaIp = bat(
+                            script: "kubectl get svc -n ${env.PROMETHEUS_NAMESPACE} prometheus-grafana -o jsonpath='{.status.loadBalancer.ingress[0].ip}'",
+                            returnStdout: true
+                        ).trim()
+                        
+                        echo "Prometheus Dashboard: http://${prometheusIp}:9090"
+                        echo "Grafana Dashboard: http://${grafanaIp} (username: admin, password: admin)"
+                        
+                        // Store the URLs as build artifacts
+                        writeFile file: 'monitoring_urls.txt', text: """
+                        Prometheus Dashboard: http://${prometheusIp}:9090
+                        Grafana Dashboard: http://${grafanaIp}
+                        Grafana Username: admin
+                        Grafana Password: admin
+                        """
+                        archiveArtifacts artifacts: 'monitoring_urls.txt'
+                    }
+                }
+            }
+        }
+
+        // DESTROY FLOW
+        stage('Terraform Destroy') {
+            when {
+                expression { env.DESTROY_INFRA == 'true' }
+            }
+            steps {
+                script {
+                    dir('Practice_Devops/terraform') {
+                        bat 'terraform destroy -auto-approve'
+                    }
+                }
+            }
+        }
+
+        stage('Post-Destroy Cleanup') {
+            when {
+                expression { env.DESTROY_INFRA == 'true' }
+            }
+            steps {
+                script {
+                    // Graceful cleanup that won't fail pipeline
+                    withEnv(["PATH+HELM=${env.HELM_INSTALL_DIR}\\windows-amd64"]) {
+                        def status = bat(
+                            script: """
+                            az login --service-principal -u ${env.ARM_CLIENT_ID} -p ${env.ARM_CLIENT_SECRET} --tenant ${env.ARM_TENANT_ID} || echo "Azure login skipped"
+                            az aks get-credentials --resource-group aks_tf_rgpriya --name my-aks-cluster123 --admin --overwrite-existing || echo "Cluster not found - already destroyed"
+                            kubectl delete -f deployment.yaml --ignore-not-found || echo "Deployment not found"
+                            helm uninstall prometheus --namespace ${env.PROMETHEUS_NAMESPACE} || echo "Helm release not found"
+                            kubectl delete namespace ${env.PROMETHEUS_NAMESPACE} --ignore-not-found || echo "Namespace not found"
+                            """,
+                            returnStatus: true
+                        )
+                        echo "Cleanup completed with status: ${status}"
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Pipeline execution completed'
+            // Clean up Helm installation
+            bat """
+            if exist "${env.HELM_INSTALL_DIR}" rmdir /s /q "${env.HELM_INSTALL_DIR}"
+            """
+        }
+        success {
+            script {
+                if (env.DESTROY_INFRA == 'true') {
+                    echo 'SUCCESS: Infrastructure destroyed (cleanup may have reported non-critical errors)'
+                } else {
+                    echo 'SUCCESS: Infrastructure deployed and configured with monitoring'
+                }
+            }
+        }
+        failure {
+            echo 'FAILURE: Pipeline failed during critical operations'
+            // Add notification here if needed
+        }
+    }
+}
