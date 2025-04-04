@@ -69,9 +69,58 @@ Can find the terraform files here:   https://github.com/priyankakanna/devops-cic
 Create AKS cluster using Terraform with Jenkins Pipeline script
 ---------------------------------------------------------------------
 
-You can find the Jenkins File in this path:
+- You can find the Jenkins File in this path:
 
-https://github.com/priyankakanna/devops-cicd-imp/tree/main/Practice_Devops/jenkins
+      https://github.com/priyankakanna/devops-cicd-imp/tree/main/Practice_Devops/jenkins
+
+- Create Jenkins Pipeline with the Jenkins Pipeline Script and run manually Build now.
+
+- Pipeline Success:
+
+![image](https://github.com/user-attachments/assets/704d828e-6baf-452c-b421-982b8ac613f7)
+
+![image](https://github.com/user-attachments/assets/ae954b7f-22fd-428c-a187-9ab585352f3d)
+
+
+![image](https://github.com/user-attachments/assets/bea796fd-ee05-42dd-8ace-be3ccda4c8f8)
+
+![image](https://github.com/user-attachments/assets/d8cfe80b-731f-40ad-84a6-acd9226b6253)
+
+- On Console output we can find the Urls for the Prometheus and Grafana to access: 
+
+![image](https://github.com/user-attachments/assets/78d7329d-f52e-4c9c-8de9-26de170454eb)
+
+
+- Resources created on Azure Portal:
+
+![image](https://github.com/user-attachments/assets/4bdf983f-188f-403d-94da-a5ef165eb204)
+
+   - Resource Group:
+
+![image](https://github.com/user-attachments/assets/e0fce31c-0d42-4d1e-95f6-297c92e8d2d7)
+
+
+   - Azure Container Registery:
+
+![image](https://github.com/user-attachments/assets/53aace0b-3c6d-42e3-878b-edacf25ab9a7)
+
+   - AKS cluster with workloads:
+
+![image](https://github.com/user-attachments/assets/1b3f5b3b-b80d-4f8e-9b51-30653055f613)
+
+![image](https://github.com/user-attachments/assets/bed039b9-ea54-465c-afd4-856d648edd7c)
+
+Prometheus dashboard:
+---------------------------------
+We can configure the Alert Manager and other things according to our requirement.
+
+![image](https://github.com/user-attachments/assets/dcd95124-91e7-4ef1-afd5-de8001e6a20e)
+
+
+Grafana Dashboard:
+---------------------------
+
+![image](https://github.com/user-attachments/assets/bb7979de-753d-4400-9465-e7743e4b73fa)
 
 
 Create Dashboard in Grafana
@@ -92,6 +141,9 @@ For creating a dashboard to monitor the cluster:
 
 This will show monitoring dashboard for all cluster nodes
 
+![image](https://github.com/user-attachments/assets/fe8528ef-4768-48bc-a800-262e94d8604e)
+
+
 ------------
 
 How to Create Kubernetes Cluster Monitoring Dashboard?
@@ -108,7 +160,10 @@ For creating a dashboard to monitor the cluster:
 
 This will show monitoring dashboard for all cluster nodes
 
----------------------
+![image](https://github.com/user-attachments/assets/79b2c036-7207-4dbf-aab0-46b93f2fd328)
+
+![image](https://github.com/user-attachments/assets/5bed7330-a61a-4950-8bfa-5f34e8e00670)
+
 
 Create POD Monitoring Dashboard
 -----------------------------------------------
@@ -120,7 +175,32 @@ For creating a dashboard to monitor the cluster:
 - Select ‘Prometheus’ as the endpoint under prometheus data sources drop down.
 - Click ‘Import’.
 
+  ![image](https://github.com/user-attachments/assets/77e50c11-45df-4b40-be27-a6044be3d615)
+
+
 Next clean up the AKS cluster: 
 --------------
 
 Update the **DESTROY_INFRA = true** // Set to true for destruction in the Jenkinsfile.
+
+Pipeline Success and Resources Deleted on Azure :
+
+![image](https://github.com/user-attachments/assets/06456ed2-e3ba-460b-9956-2aeb1030c44f)
+
+
+![image](https://github.com/user-attachments/assets/72e2f9f2-31e2-4493-a0a0-d394f5692061)
+
+Resouces Deleted on Azure Portal:
+
+![image](https://github.com/user-attachments/assets/fa3c0a8d-e139-4094-8ceb-e546d77fd443)
+
+Prometheus not accessible:
+
+![image](https://github.com/user-attachments/assets/fcf6cddb-7bba-4ed7-88c4-c5b0dfe67032)
+
+Grafana not accessible:
+
+![image](https://github.com/user-attachments/assets/48b5e566-d334-4b1e-9cb3-567657deb61e)
+
+
+
